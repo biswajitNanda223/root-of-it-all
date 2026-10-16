@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Write the OpenAPI schema to docs/openapi.json (contract artifact).
 source "$(dirname "$0")/_lib.sh"
+export RIO_ENVIRONMENT=test
 
-RIO_ENVIRONMENT=test uv run python - <<'PY' > docs/openapi.json
+uv run python - <<'PY' > docs/openapi.json
 import json
 from rio_core.config import Settings
 from app.main import create_app

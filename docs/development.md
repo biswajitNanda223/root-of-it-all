@@ -14,6 +14,14 @@ scripts/format.sh && scripts/check.sh
 Everything runs through `uv run`, so there is no venv to activate. Run ad-hoc commands with
 `uv run --package api python -m app` or `uv run pytest apps/api/tests/unit -k auth`.
 
+## Native code & lld
+`scripts/*.sh` load the layered lld toolchain automatically. `scripts/lld-doctor.sh` proves it, `scripts/native.sh release`
+rebuilds the C extension under another profile. Details: [lld.md](lld.md).
+
+## Commit checks
+Hooks (pre-commit, commit-msg, pre-push) are installed by `scripts/bootstrap.sh`; Conventional Commits are enforced.
+Details: [git-workflow.md](git-workflow.md).
+
 ## Dependencies
 ```bash
 uv add --package api httpx            # runtime dep of one app
@@ -33,4 +41,5 @@ Commit `uv.lock`. Docker and CI use `--frozen`.
 `scripts/migrate.sh` (default `upgrade head`). Point at Postgres with `RIO_DATABASE_URL=postgresql+asyncpg://…`.
 
 ## Testing
-`scripts/test.sh` · `COV=1 scripts/test.sh` enforces ≥ 85 % coverage. Tests use a per-test SQLite file.
+`scripts/test.sh` · `COV=1 scripts/test.sh` enforces ≥ 85 % coverage. Tests use a per-test SQLite file; playground
+endpoints are covered end-to-end in `tests/integration/test_playground.py`.

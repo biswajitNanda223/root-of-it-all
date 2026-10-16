@@ -4,7 +4,8 @@ source "$(dirname "$0")/_lib.sh"
 
 [[ $# -gt 0 ]] || set -- upgrade head
 if [[ "$1" == "check" ]]; then
-  export RIO_DATABASE_URL="sqlite+aiosqlite:///$(mktemp -u)"
+  tmpdb="$(mktemp -u)"
+  export RIO_DATABASE_URL="sqlite+aiosqlite:///$tmpdb"
   uv run alembic -c apps/api/alembic.ini upgrade head
 fi
 if [[ "$1" == "revision" ]]; then set -- revision --autogenerate "${@:2}"; fi

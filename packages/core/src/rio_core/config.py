@@ -40,6 +40,11 @@ class Settings(BaseSettings):
 
     max_upload_bytes: int = 5 * 1024 * 1024
 
+    # Playground: dummy end-to-end APIs that exercise the FastAPI feature set. Never in production.
+    playground_enabled: bool = True
+    playground_api_key: SecretStr = SecretStr("demo-key")
+    public_url: str | None = None  # advertised in OpenAPI `servers` (set behind a proxy)
+
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
@@ -51,6 +56,8 @@ class Settings(BaseSettings):
                 raise ValueError("RIO_SECRET_KEY must be set outside development/test")
             if self.debug:
                 raise ValueError("RIO_DEBUG must be false in staging/production")
+        if self.environment == "production" and self.playground_enabled:
+            raise ValueError("RIO_PLAYGROUND_ENABLED must be false in production")
         return self
 
 

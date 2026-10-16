@@ -13,5 +13,6 @@ case "$ACTION" in
   logs)  exec "${C[@]}" logs -f "$@" ;;
   ps)    exec "${C[@]}" ps "$@" ;;
   config) exec "${C[@]}" config "$@" ;;
+  size)  docker image ls --format '{{.Repository}}:{{.Tag}}\t{{.Size}}' | grep -E '^rio' || true ;;
   *) die "unknown action $ACTION" ;;
 esac

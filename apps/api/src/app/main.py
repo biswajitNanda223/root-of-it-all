@@ -11,17 +11,10 @@ from app.api.router import root, v1
 from app.errors import register_exception_handlers
 from app.lifespan import lifespan
 from app.middleware import RequestContextMiddleware
+from app.openapi import CONTACT, DESCRIPTION, SWAGGER_UI, TAGS, TERMS, operation_id
+from app.playground import router as playground
 from rio_core.config import Settings, get_settings
 from rio_core.logging import configure_logging
-
-TAGS = [
-    {"name": "health", "description": "Liveness and readiness probes."},
-    {"name": "auth", "description": "Registration and OAuth2 password-flow tokens."},
-    {"name": "users", "description": "User profile and administration."},
-    {"name": "items", "description": "Owner-scoped CRUD with pagination."},
-    {"name": "files", "description": "Streaming, size-capped uploads."},
-    {"name": "realtime", "description": "SSE and WebSocket examples."},
-]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -32,7 +25,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title=settings.app_name,
         version="0.1.0",
         summary="Production-grade FastAPI service.",
-        openapi_tags=TAGS,
+        openapi_tags=TAGS + (playground.TAGS if settings.playground_enabled else []),
+        generate_unique_id_function=operation_id,
+        servers=[{"url": settings.public_url}] if settings.public_url else None,
+        description=DESCRIPTION,
+        contact=CONTACT,
+        terms_of_service=TERMS,
+        swagger_ui_parameters=SWAGGER_UI,
         debug=settings.debug,
         lifespan=lifespan,
         docs_url="/docs" if settings.docs_enabled else None,
@@ -58,6 +57,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
     app.include_router(root)
     app.include_router(v1)
+    if settings.playground_enabled:
+        playground.register(app)
     return app
 
 

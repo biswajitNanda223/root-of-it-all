@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
   "rio-core",
   "rio-db",
+  "rio-native",
   "fastapi[standard]>=0.115",
   "sqlalchemy[asyncio]>=2.0.36",
   "aiosqlite>=0.20",
@@ -14,6 +15,11 @@ dependencies = [
   "pyjwt>=2.10",
   "pwdlib[argon2]>=0.2",
 ]
+
+[tool.uv.sources]
+rio-core = { workspace = true }
+rio-db = { workspace = true }
+rio-native = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

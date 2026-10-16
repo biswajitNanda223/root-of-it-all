@@ -61,3 +61,19 @@ run = "scripts/docker.sh dev up"
 [tasks."docker:staging"]
 description = "Compose: staging stack (slim image)"
 run = "scripts/docker.sh staging up"
+
+[tasks.lld]
+description = "Prove lld links (all profiles) and rebuild the native extension"
+run = ["scripts/lld-doctor.sh packages/native release", "scripts/native.sh release"]
+
+[tasks.affected]
+description = "Projects affected by the current change (vs origin/main)"
+run = "scripts/affected.sh"
+
+[tasks.hooks]
+description = "Run every pre-commit hook on all files"
+run = "uv run pre-commit run --all-files"
+
+[tasks."docker:test"]
+description = "Run lint + types + tests inside the image"
+run = "docker buildx bake test"

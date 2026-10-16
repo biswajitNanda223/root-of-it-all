@@ -8,9 +8,11 @@ and a light multi-stage **Docker** build (dev → staging → prod) that links n
 ├── apps/api/            FastAPI service  (domain → services → infrastructure → api)
 ├── packages/core/       rio-core: settings, errors, logging, pagination
 ├── packages/db/         rio-db:   async SQLAlchemy Base / Database
-├── scripts/             *.sh wrappers around `uv run` (the only commands you need)
-├── docs/                architecture, ADRs, BMAD artifacts, guides
-├── Dockerfile           targets: dev | staging | prod
+├── packages/native/     rio-native: C extension (lld-linked) with pure-Python fallback
+├── tooling/             lld profiles (base → dev/release → per-project) and affected-project detection
+├── scripts/             *.sh wrappers around `uv run` (+ git hooks in scripts/hooks)
+├── docs/                architecture, ADRs, BMAD artifacts, guides, OpenAPI contract
+├── Dockerfile           targets: dev | test | staging | prod      docker-bake.hcl: multi-arch + SBOM
 ├── compose*.yaml        base + per-environment overrides
 ├── mise.toml            tool pins, env, tasks
 └── pyproject.toml       uv workspace root + ruff / mypy / pytest config
@@ -31,20 +33,24 @@ scripts/check.sh        # lint + mypy --strict + tests(+coverage) + migration dr
 | `scripts/lint.sh` `format.sh` `typecheck.sh` `test.sh` | ruff, ruff fix, mypy strict, pytest (`COV=1` for coverage gate) |
 | `scripts/migrate.sh` | Alembic: `upgrade head`, `revision -m "msg"`, `check` |
 | `scripts/docker.sh <dev\|staging\|prod> <up\|down\|logs\|build>` | compose stacks |
-| `scripts/export-openapi.sh` | write `docs/openapi.json` contract |
+| `scripts/export-openapi.sh` | write `docs/openapi.json` contract (CI fails if stale) |
+| `scripts/lld-doctor.sh` `native.sh` | prove lld links / rebuild the C extension under a profile |
+| `scripts/affected.sh` | which workspace projects the current change touches |
 | `scripts/lock.sh [--upgrade]` | refresh `uv.lock` |
 
 Each is also a mise task (`mise run check`, `mise run docker:staging`, …).
 
 ## FastAPI features demonstrated
+**Every topic of the official docs has a runnable example** - see [FastAPI coverage map](docs/fastapi-coverage.md). Core features:
 App factory + lifespan · settings (pydantic-settings) · routers & versioning (`/api/v1`) · dependency injection
 (`Annotated` aliases, per-request unit of work) · OAuth2 password flow + JWT · Argon2 hashing · typed
 request/response models · pagination · RFC 7807 `application/problem+json` errors · custom exception handlers ·
 pure-ASGI middleware (request-id, timing, security headers) · CORS / GZip / TrustedHost · `BackgroundTasks` ·
 streaming uploads with size cap · Server-Sent Events · WebSockets · OpenAPI tags/metadata · health/readiness probes ·
-`TestClient` integration tests.
+`TestClient` integration tests. Plus a **playground** (`/api/v1/playground`, off in production): one dummy API per docs topic and an end-to-end *shop* (products → orders → pay → events, with idempotency keys, OpenAPI callbacks and webhooks).
 
 ## Docs
 [Architecture](docs/architecture.md) · [Development](docs/development.md) · [Deployment & Docker](docs/deployment.md) ·
-[API guide](docs/api.md) · [ADRs](docs/adr/) · [BMAD artifacts](docs/bmad/README.md) ·
+[lld](docs/lld.md) · [Git workflow & hooks](docs/git-workflow.md) · [API guide](docs/api.md) ·
+[FastAPI coverage](docs/fastapi-coverage.md) · [ADRs](docs/adr/) · [BMAD artifacts](docs/bmad/README.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

@@ -14,6 +14,7 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    init: true
 
   migrate:
     build: { context: ., target: runtime }
@@ -27,6 +28,8 @@ services:
   api:
     build: { context: ., target: runtime }
     environment: *api-env
+    init: true            # tini as PID 1: reaps zombies, forwards SIGTERM
+    stop_grace_period: 25s  # > uvicorn --timeout-graceful-shutdown (20s)
     ports: ["${PORT:-8000}:8000"]
     depends_on:
       db: { condition: service_healthy }

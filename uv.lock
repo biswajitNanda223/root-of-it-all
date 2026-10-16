@@ -13,6 +13,7 @@ members = [
     "api",
     "rio-core",
     "rio-db",
+    "rio-native",
     "root-of-it-all",
 ]
 
@@ -92,6 +93,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "rio-core" },
     { name = "rio-db" },
+    { name = "rio-native" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
@@ -105,6 +107,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.10" },
     { name = "rio-core", editable = "packages/core" },
     { name = "rio-db", editable = "packages/db" },
+    { name = "rio-native", editable = "packages/native" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36" },
 ]
 
@@ -2092,6 +2095,11 @@ dependencies = [
 requires-dist = [{ name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36" }]
 
 [[package]]
+name = "rio-native"
+version = "0.1.0"
+source = { editable = "packages/native" }
+
+[[package]]
 name = "root-of-it-all"
 version = "0.1.0"
 source = { virtual = "." }
@@ -2099,6 +2107,7 @@ dependencies = [
     { name = "api" },
     { name = "rio-core" },
     { name = "rio-db" },
+    { name = "rio-native" },
 ]
 
 [package.dev-dependencies]
@@ -2117,6 +2126,7 @@ requires-dist = [
     { name = "api", editable = "apps/api" },
     { name = "rio-core", editable = "packages/core" },
     { name = "rio-db", editable = "packages/db" },
+    { name = "rio-native", editable = "packages/native" },
 ]
 
 [package.metadata.requires-dev]

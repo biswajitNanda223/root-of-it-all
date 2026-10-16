@@ -1,5 +1,7 @@
 # Contributing
-1. Branch from `main`; keep PRs to one BMAD story.
-2. `scripts/bootstrap.sh`, change, `scripts/format.sh`, `scripts/check.sh` must pass.
-3. Conventional commits (`feat:`, `fix:`, `docs:`, `chore:`); update `CHANGELOG.md` and ADRs when relevant.
-4. Never commit `.env` or secrets; hooks run `detect-private-key`.
+1. Branch from `main` (direct commits to `main` are blocked by a hook); keep PRs to one BMAD story.
+2. `scripts/bootstrap.sh` installs hooks; `scripts/format.sh` then `scripts/check.sh` must pass.
+3. **Conventional Commits** (`feat(api): ...`, `fix(db): ...`; enforced locally and in CI). See [docs/git-workflow.md](docs/git-workflow.md).
+4. Update `CHANGELOG.md`, ADRs and `docs/` when behaviour changes; re-export the contract with `scripts/export-openapi.sh`.
+5. Model changes need an Alembic migration (`scripts/migrate.sh revision -m "..."`).
+6. Never commit `.env` or secrets (hooks + CI scan for them).
