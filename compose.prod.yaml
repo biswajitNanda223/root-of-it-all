@@ -1,0 +1,19 @@
+# Prod: docs off, replicas + stricter limits. Pull a prebuilt image by setting RIO_IMAGE.
+services:
+  migrate:
+    build: { target: prod }
+    image: ${RIO_IMAGE:-rio-api:prod}
+  api:
+    build: { target: prod }
+    image: ${RIO_IMAGE:-rio-api:prod}
+    environment:
+      RIO_SECRET_KEY: ${RIO_SECRET_KEY:?set RIO_SECRET_KEY}
+      RIO_ALLOWED_HOSTS: ${RIO_ALLOWED_HOSTS:-["*"]}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      replicas: 2
+      resources:
+        limits: { cpus: "1.0", memory: 384M }

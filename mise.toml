@@ -1,0 +1,63 @@
+# https://mise.jdx.dev - pins tools and exposes tasks. `mise install && mise run setup`
+min_version = "2024.12.0"
+
+[tools]
+python = "3.13"
+uv = "latest"
+# lld/clang come from the OS (apt install clang lld | brew install llvm lld); see docs/development.md
+
+[env]
+UV_PROJECT_ENVIRONMENT = ".venv"
+UV_LINK_MODE = "copy"
+UV_COMPILE_BYTECODE = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"
+_.file = { path = ".env", redact = true }
+
+[tasks.setup]
+description = "Sync workspace + install git hooks"
+run = "scripts/bootstrap.sh"
+
+[tasks.dev]
+description = "API with auto-reload on :8000"
+run = "scripts/dev.sh"
+
+[tasks.start]
+description = "API in production mode"
+run = "scripts/start.sh"
+
+[tasks.lint]
+description = "ruff check + format check"
+run = "scripts/lint.sh"
+
+[tasks.fmt]
+description = "ruff fix + format"
+run = "scripts/format.sh"
+
+[tasks.types]
+description = "mypy --strict"
+run = "scripts/typecheck.sh"
+
+[tasks.test]
+description = "pytest"
+run = "scripts/test.sh"
+
+[tasks.check]
+description = "Full CI gate"
+run = "scripts/check.sh"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "scripts/migrate.sh upgrade head"
+
+[tasks.openapi]
+description = "Export OpenAPI contract"
+run = "scripts/export-openapi.sh"
+
+[tasks."docker:dev"]
+description = "Compose: dev stack"
+run = "scripts/docker.sh dev up"
+
+[tasks."docker:staging"]
+description = "Compose: staging stack (slim image)"
+run = "scripts/docker.sh staging up"

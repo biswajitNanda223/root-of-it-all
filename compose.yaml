@@ -1,0 +1,37 @@
+# Base services shared by every environment. Use scripts/docker.sh <env> up.
+name: rio
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: rio
+      POSTGRES_DB: rio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rio -d rio"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build: { context: ., target: runtime }
+    command: ["alembic", "upgrade", "head"]
+    environment: &api-env
+      RIO_DATABASE_URL: postgresql+asyncpg://rio:${POSTGRES_PASSWORD}@db:5432/rio
+      RIO_SECRET_KEY: ${RIO_SECRET_KEY:-}
+    depends_on: { db: { condition: service_healthy } }
+    restart: "no"
+
+  api:
+    build: { context: ., target: runtime }
+    environment: *api-env
+    ports: ["${PORT:-8000}:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+volumes:
+  pgdata:

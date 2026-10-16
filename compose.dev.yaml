@@ -1,0 +1,16 @@
+# Dev: hot-reload from bind-mounted source, tables auto-created, no migrate step needed.
+services:
+  migrate:
+    build: { target: dev }
+    command: ["alembic", "-c", "apps/api/alembic.ini", "upgrade", "head"]
+    working_dir: /workspace
+  api:
+    build: { target: dev }
+    environment:
+      RIO_ENVIRONMENT: development
+      RIO_SECRET_KEY: dev-secret-not-for-production
+      RIO_DEBUG: "true"
+    volumes:
+      - ./apps/api/src:/workspace/apps/api/src
+      - ./packages:/workspace/packages
+    working_dir: /workspace

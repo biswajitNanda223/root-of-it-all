@@ -1,0 +1,15 @@
+# Staging: the exact prod image shape (slim, non-root), docs on, tighter limits.
+services:
+  migrate:
+    build: { target: staging }
+  api:
+    build: { target: staging }
+    environment:
+      RIO_SECRET_KEY: ${RIO_SECRET_KEY:?set RIO_SECRET_KEY}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 256M }
