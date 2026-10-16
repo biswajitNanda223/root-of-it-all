@@ -47,6 +47,12 @@ repos:
         entry: python3 scripts/hooks/scan_secrets.py
         language: system
         exclude: ^uv\.lock$
+      - id: dotenvx-hygiene
+        name: dotenvx - env files encrypted, keys never committed
+        entry: python3 scripts/hooks/check_dotenvx.py
+        language: system
+        files: ^\.env
+        exclude: ^\.env\.example$
       - id: conventional-commit
         name: conventional commit message
         entry: python3 scripts/hooks/commit_msg.py

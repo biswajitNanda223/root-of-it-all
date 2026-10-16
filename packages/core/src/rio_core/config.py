@@ -13,8 +13,13 @@ _INSECURE_DEFAULT = "change-me-in-production"
 
 
 class Settings(BaseSettings):
+    # Real configuration arrives via process env (injected by `dotenvx run`, see docs/secrets.md);
+    # `.env.local` is read directly so IDE-launched processes work too.
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore", env_prefix="RIO_"
+        env_file=(".env", ".env.local"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+        env_prefix="RIO_",
     )
 
     app_name: str = "root-of-it-all"

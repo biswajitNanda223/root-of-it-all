@@ -3,7 +3,14 @@ __pycache__/
 *.py[cod]
 .env
 .env.*
+# dotenvx: plaintext dev + *encrypted* staging/production/ci are committed; keys and local overrides never are
 !.env.example
+!.env.development
+!.env.staging
+!.env.production
+!.env.ci
+.env.keys
+.env.local
 *.db
 .pytest_cache/
 .mypy_cache/

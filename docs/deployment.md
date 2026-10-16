@@ -35,8 +35,11 @@ VERSION=1.2.3 GIT_SHA=$(git rev-parse HEAD) docker buildx bake release --push
 ```
 `api` starts only after the one-shot `migrate` service succeeds.
 
-## Environment
-See `.env.example`. Required outside dev: `RIO_SECRET_KEY`, `RIO_DATABASE_URL`, `POSTGRES_PASSWORD` (compose).
+## Environment & secrets
+See `.env.example` and [secrets.md](secrets.md). Staging/production values live in **encrypted** `.env.staging` /
+`.env.production`; `scripts/docker.sh <env> ...` decrypts them on the host (`dotenvx run`) so the image carries no
+secrets and no dotenvx. Provide `DOTENV_PRIVATE_KEY_<ENV>` from your secret manager. Required outside dev:
+`RIO_SECRET_KEY`, `RIO_DATABASE_URL`/`POSTGRES_PASSWORD`.
 Behind a proxy: `FORWARDED_ALLOW_IPS`, `RIO_ALLOWED_HOSTS`, `RIO_PUBLIC_URL` (advertised in OpenAPI `servers`).
 
 ## Promotion

@@ -4,6 +4,8 @@ min_version = "2024.12.0"
 [tools]
 python = "3.13"
 uv = "latest"
+node = "22"
+"npm:@dotenvx/dotenvx" = "2.37.0"   # encrypted .env files (docs/secrets.md)
 # lld/clang come from the OS (apt install clang lld | brew install llvm lld); see docs/development.md
 
 [env]
@@ -12,7 +14,6 @@ UV_LINK_MODE = "copy"
 UV_COMPILE_BYTECODE = "1"
 PYTHONDONTWRITEBYTECODE = "1"
 PYTHONUNBUFFERED = "1"
-_.file = { path = ".env", redact = true }
 
 [tasks.setup]
 description = "Sync workspace + install git hooks"
@@ -77,3 +78,11 @@ run = "uv run pre-commit run --all-files"
 [tasks."docker:test"]
 description = "Run lint + types + tests inside the image"
 run = "docker buildx bake test"
+
+[tasks."env:init"]
+description = "Create + encrypt .env.<staging|production|ci>   (mise run env:init staging)"
+run = "scripts/env.sh init"
+
+[tasks."env:check"]
+description = "Verify env files are encrypted and keys are untracked"
+run = "scripts/env.sh check"

@@ -4,4 +4,4 @@
 3. **Conventional Commits** (`feat(api): ...`, `fix(db): ...`; enforced locally and in CI). See [docs/git-workflow.md](docs/git-workflow.md).
 4. Update `CHANGELOG.md`, ADRs and `docs/` when behaviour changes; re-export the contract with `scripts/export-openapi.sh`.
 5. Model changes need an Alembic migration (`scripts/migrate.sh revision -m "..."`).
-6. Never commit `.env` or secrets (hooks + CI scan for them).
+6. Secrets: only dotenvx-**encrypted** `.env.staging|production|ci` may be committed; never `.env.keys`, `.env.local` or plaintext values (hooks + CI enforce this; see [docs/secrets.md](docs/secrets.md)).

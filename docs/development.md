@@ -14,6 +14,9 @@ scripts/format.sh && scripts/check.sh
 Everything runs through `uv run`, so there is no venv to activate. Run ad-hoc commands with
 `uv run --package api python -m app` or `uv run pytest apps/api/tests/unit -k auth`.
 
+## Configuration
+`scripts/dev.sh` runs under `dotenvx run` with `.env.local` + `.env.development`; see [secrets.md](secrets.md).
+
 ## Native code & lld
 `scripts/*.sh` load the layered lld toolchain automatically. `scripts/lld-doctor.sh` proves it, `scripts/native.sh release`
 rebuilds the C extension under another profile. Details: [lld.md](lld.md).

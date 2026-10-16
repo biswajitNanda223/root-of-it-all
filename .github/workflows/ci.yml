@@ -21,6 +21,8 @@ jobs:
             git log -1 --format=%B "$sha" > /tmp/msg
             python3 scripts/hooks/commit_msg.py /tmp/msg || { echo "bad commit $sha"; exit 1; }
           done
+      - name: dotenvx hygiene (encrypted env files, no keys)
+        run: git ls-files '.env*' | grep -v '^.env.example$' | xargs -r python3 scripts/hooks/check_dotenvx.py
       - name: Secret scan
         run: git diff --name-only origin/${{ github.base_ref }}...HEAD | xargs -r python3 scripts/hooks/scan_secrets.py
 

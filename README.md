@@ -14,7 +14,8 @@ and a light multi-stage **Docker** build (dev → staging → prod) that links n
 ├── docs/                architecture, ADRs, BMAD artifacts, guides, OpenAPI contract
 ├── Dockerfile           targets: dev | test | staging | prod      docker-bake.hcl: multi-arch + SBOM
 ├── compose*.yaml        base + per-environment overrides
-├── mise.toml            tool pins, env, tasks
+├── .env.development     plaintext dev defaults; .env.staging/.env.production are dotenvx-ENCRYPTED
+├── mise.toml            tool pins (python, uv, node, dotenvx), tasks
 └── pyproject.toml       uv workspace root + ruff / mypy / pytest config
 ```
 
@@ -31,6 +32,7 @@ scripts/check.sh        # lint + mypy --strict + tests(+coverage) + migration dr
 |---|---|
 | `scripts/dev.sh` / `start.sh` | reload server / production server (workers, proxy headers) |
 | `scripts/lint.sh` `format.sh` `typecheck.sh` `test.sh` | ruff, ruff fix, mypy strict, pytest (`COV=1` for coverage gate) |
+| `scripts/env.sh init\|set\|get\|decrypt\|check` | encrypted env files via **dotenvx** ([docs/secrets.md](docs/secrets.md)) |
 | `scripts/migrate.sh` | Alembic: `upgrade head`, `revision -m "msg"`, `check` |
 | `scripts/docker.sh <dev\|staging\|prod> <up\|down\|logs\|build>` | compose stacks |
 | `scripts/export-openapi.sh` | write `docs/openapi.json` contract (CI fails if stale) |
@@ -51,6 +53,6 @@ streaming uploads with size cap · Server-Sent Events · WebSockets · OpenAPI t
 
 ## Docs
 [Architecture](docs/architecture.md) · [Development](docs/development.md) · [Deployment & Docker](docs/deployment.md) ·
-[lld](docs/lld.md) · [Git workflow & hooks](docs/git-workflow.md) · [API guide](docs/api.md) ·
+[Secrets (dotenvx)](docs/secrets.md) · [lld](docs/lld.md) · [Git workflow & hooks](docs/git-workflow.md) · [API guide](docs/api.md) ·
 [FastAPI coverage](docs/fastapi-coverage.md) · [ADRs](docs/adr/) · [BMAD artifacts](docs/bmad/README.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

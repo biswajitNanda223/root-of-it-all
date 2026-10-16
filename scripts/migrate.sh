@@ -2,6 +2,7 @@
 # Alembic wrapper: migrate.sh [upgrade head|revision -m msg|check|downgrade -1].
 source "$(dirname "$0")/_lib.sh"
 
+dx_prefix "${APP_ENV:-development}"
 [[ $# -gt 0 ]] || set -- upgrade head
 if [[ "$1" == "check" ]]; then
   tmpdb="$(mktemp -u)"
@@ -9,4 +10,4 @@ if [[ "$1" == "check" ]]; then
   uv run alembic -c apps/api/alembic.ini upgrade head
 fi
 if [[ "$1" == "revision" ]]; then set -- revision --autogenerate "${@:2}"; fi
-exec uv run alembic -c apps/api/alembic.ini "$@"
+exec "${DX[@]}" uv run alembic -c apps/api/alembic.ini "$@"

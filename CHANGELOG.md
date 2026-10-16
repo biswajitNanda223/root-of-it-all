@@ -1,4 +1,7 @@
 # Changelog
+## 0.3.0
+- **dotenvx**: encrypted `.env.staging|production|ci`, plaintext `.env.development`, `scripts/env.sh` (init/set/get/decrypt/encrypt/check/run), automatic decryption in dev/start/migrate/docker scripts, hygiene hook + CI check, mise tool pin, docs/secrets.md, ADR 0008.
+
 ## 0.2.0
 - **lld**: layered toolchain (`tooling/lld`: base -> dev/release -> per-project), `LDSHARED` fix, `lld-doctor.sh`, `native.sh`; new `packages/native` C extension (ThinLTO, ICF, GC, hidden symbols), used by uploads.
 - **Git**: Conventional Commits hook, secret scan, shellcheck, migration-drift, no-commit-to-main, affected-only pre-push; CI mirrors them; `tooling/affected.py`.
