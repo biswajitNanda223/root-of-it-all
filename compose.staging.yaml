@@ -12,6 +12,17 @@ services:
     deploy:
       resources:
         limits: { cpus: "1.0", memory: 256M }
+  billing:
+    environment:
+      RIO_SECRET_KEY: ${RIO_SECRET_KEY:?set RIO_SECRET_KEY}
+      RIO_SERVICE_KEY: ${RIO_SERVICE_KEY:?set RIO_SERVICE_KEY}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 256M }
   catalog:
     environment:
       RIO_SECRET_KEY: ${RIO_SECRET_KEY:?set RIO_SECRET_KEY}

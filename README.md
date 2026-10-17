@@ -8,7 +8,8 @@ and a light multi-stage **Docker** build (dev → staging → prod) that links n
 ├── apps/
 │   ├── api/             identity (JWT) + playground      :8000   own DB, own Alembic
 │   ├── catalog/         products & stock reservation     :8001   own DB, own Alembic
-│   └── orders/          order saga + outbox → catalog    :8002   own DB, own Alembic
+│   ├── orders/          order saga + outbox → catalog    :8002   own DB, own Alembic
+│   └── billing/         invoices (made with new-service) :8003   own DB, own Alembic
 ├── packages/
 │   ├── core/  db/       settings · errors · logging · async SQLAlchemy unit of work
 │   ├── web/             create_service_app(): middleware, problem+json, probes, DB lifespan, DI backbone
@@ -31,7 +32,7 @@ and a light multi-stage **Docker** build (dev → staging → prod) that links n
 ```bash
 mise install            # python 3.13 + uv   (or: install uv yourself)
 scripts/bootstrap.sh    # uv sync --frozen, .env, git hooks
-scripts/dev-all.sh      # all services: :8000 identity, :8001 catalog, :8002 orders  (each has /docs)
+scripts/dev-all.sh      # all services: :8000 identity, :8001 catalog, :8002 orders, :8003 billing (each has /docs)
 scripts/dev.sh catalog  # or just one
 scripts/check.sh        # lint + mypy --strict + tests(+coverage) + migration drift
 ```

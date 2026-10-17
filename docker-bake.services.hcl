@@ -2,6 +2,7 @@
 variable "SERVICES" {
   default = {
     api = { module = "app.main:app_factory", port = "8000" }
+    billing = { module = "billing_service.main:app_factory", port = "8003" }
     catalog = { module = "catalog_service.main:app_factory", port = "8001" }
     orders = { module = "orders_service.main:app_factory", port = "8002" }
   }

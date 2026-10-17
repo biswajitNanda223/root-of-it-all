@@ -15,6 +15,20 @@ services:
   api-migrate:
     working_dir: /workspace
     command: ["alembic", "-c", "apps/api/alembic.ini", "upgrade", "head"]
+  billing:
+    environment:
+      RIO_ENVIRONMENT: development
+      RIO_AUTO_CREATE_TABLES: "true"
+      RIO_SECRET_KEY: dev-secret-not-for-production
+      RIO_SERVICE_KEY: dev-service-key
+      RIO_DEBUG: "true"
+    volumes:
+      - ./apps/billing/src:/workspace/apps/billing/src
+      - ./packages:/workspace/packages
+    working_dir: /workspace
+  billing-migrate:
+    working_dir: /workspace
+    command: ["alembic", "-c", "apps/billing/alembic.ini", "upgrade", "head"]
   catalog:
     environment:
       RIO_ENVIRONMENT: development

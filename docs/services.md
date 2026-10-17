@@ -9,6 +9,7 @@ dependency-injection wiring, own settings, own tests, own container image, own O
 | `api` | 8000 | users (`RIO_DATABASE_URL`) | - | **Identity** (register/login, mints JWTs) + demo/playground (items, files, SSE/WS, every FastAPI topic) |
 | `catalog` | 8001 | products, categories, reservations (`CATALOG_DATABASE_URL`) | - | Public product search, admin writes, **stock reservation protocol** |
 | `orders` | 8002 | orders, lines, outbox (`ORDERS_DATABASE_URL`) | catalog (HTTP) | Order placement saga, state machine, **transactional outbox** |
+| `billing` | 8003 | invoices (`BILLING_DATABASE_URL`) | - | One invoice per order, `issued -> paid \| void`; created with `scripts/new-service.sh` (worked example below) |
 
 Run them: `scripts/dev-all.sh` (all) or `scripts/dev.sh catalog`. Swagger: `:8000/docs`, `:8001/docs`, `:8002/docs`.
 Contracts: `docs/openapi/<service>.json` (CI fails when stale).
@@ -82,3 +83,24 @@ run `scripts/generate.sh` - it updates the manifest bind-mounts in the Dockerfil
 `create_service_app` (probes, problem+json, request ids, docs) - `database_lifespan` with its own metadata - settings
 subclass with its own DB env var - Alembic with its own version table - port/adapters/DI split - JWT principal dependency -
 tests with a per-test SQLite file - container image + compose + bake targets - OpenAPI contract export.
+
+## Worked example: how `billing` was created
+```bash
+scripts/new-service.sh billing --title Billing     # 1. scaffold (port 8003 auto-assigned)
+```
+Result of step 1: `apps/billing/` with a working example resource, `BILLING_DATABASE_URL` in `.env.development`, the app
+registered in the root `pyproject.toml`, a first migration, and updated `compose*.yaml` / `docker-bake.services.hcl`.
+
+Then the template's `notes` example was replaced by a real domain, layer by layer (same order every time):
+
+| # | File (`apps/billing/src/billing_service/`) | Change |
+|---|---|---|
+| 1 | `domain/entities.py`, `domain/ports.py` | `Invoice` + `InvoiceStatus`; `InvoiceRepository` Protocol |
+| 2 | `services/invoices.py` | rules: one invoice per order, ownership, `issued -> paid \| void` (admin-only void) |
+| 3 | `infrastructure/models.py`, `repositories.py` | `InvoiceModel` on the service's own `Base`; SQL adapter |
+| 4 | `api/deps.py` | composition root: repository -> service, `PrincipalDep`, `AdminDep` |
+| 5 | `api/v1/invoices.py`, `main.py` | DTOs + routes, registered in `create_service_app` |
+| 6 | `migrations/versions/0001_*.py` | regenerated with `scripts/migrate.sh billing revision -m "initial schema"` |
+| 7 | `tests/test_invoices.py` | state machine, isolation, one-per-order, own-tables-only |
+
+Finally `scripts/export-openapi.sh billing` wrote `docs/openapi/billing.json`, and `scripts/check.sh` was green.

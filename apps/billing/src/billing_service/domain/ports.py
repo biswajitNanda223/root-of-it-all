@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Protocol
+
+from billing_service.domain.entities import Invoice, InvoiceStatus
+
+
+class InvoiceRepository(Protocol):
+    async def add(self, *, order_id: int, customer_id: str, amount: Decimal) -> Invoice: ...
+    async def get(self, invoice_id: int) -> Invoice | None: ...
+    async def get_by_order(self, order_id: int) -> Invoice | None: ...
+    async def list(
+        self, *, customer_id: str | None, limit: int, offset: int
+    ) -> tuple[list[Invoice], int]: ...
+    async def set_status(self, invoice_id: int, status: InvoiceStatus) -> Invoice: ...

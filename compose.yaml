@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: rio
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
-      RIO_DATABASES: "api,catalog,orders"          # one database per service, created on first start
+      RIO_DATABASES: "api,billing,catalog,orders"          # one database per service, created on first start
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/10-init-databases.sh:ro
@@ -61,6 +61,56 @@ services:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u,sys; sys.exit(u.urlopen('http://127.0.0.1:8000/health/ready', timeout=2).status != 200)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  billing-migrate:
+    build:
+      context: .
+      target: ${RIO_TARGET:-runtime}
+      args:
+        SERVICE: billing
+        SERVICE_MODULE: billing_service.main:app_factory
+        SERVICE_PORT: "8003"
+    image: rio-billing:${RIO_TAG:-local}
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      BILLING_DATABASE_URL: "postgresql+asyncpg://rio:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/billing"
+      RIO_SECRET_KEY: "${RIO_SECRET_KEY:-}"
+      RIO_SERVICE_KEY: "${RIO_SERVICE_KEY:-}"
+      IDENTITY_TOKEN_URL: "http://localhost:8000/api/v1/auth/token"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  billing:
+    build:
+      context: .
+      target: ${RIO_TARGET:-runtime}
+      args:
+        SERVICE: billing
+        SERVICE_MODULE: billing_service.main:app_factory
+        SERVICE_PORT: "8003"
+    image: rio-billing:${RIO_TAG:-local}
+    environment:
+      BILLING_DATABASE_URL: "postgresql+asyncpg://rio:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/billing"
+      RIO_SECRET_KEY: "${RIO_SECRET_KEY:-}"
+      RIO_SERVICE_KEY: "${RIO_SERVICE_KEY:-}"
+      IDENTITY_TOKEN_URL: "http://localhost:8000/api/v1/auth/token"
+    ports: ["${BILLING_PORT:-8003}:8003"]
+    init: true            # tini as PID 1: reaps zombies, forwards SIGTERM
+    stop_grace_period: 25s  # > uvicorn --timeout-graceful-shutdown (20s)
+    depends_on:
+      db:
+        condition: service_healthy
+      billing-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u,sys; sys.exit(u.urlopen('http://127.0.0.1:8003/health/ready', timeout=2).status != 200)"]
       interval: 10s
       timeout: 3s
       retries: 6
