@@ -23,6 +23,7 @@ case "$ACTION" in
     {
       echo "RIO_ENVIRONMENT=$([[ $ENVNAME == production ]] && echo production || echo staging)"
       echo "RIO_SECRET_KEY=$(openssl rand -hex 32)"
+      echo "RIO_SERVICE_KEY=$(openssl rand -hex 32)"
       echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
       echo "RIO_PLAYGROUND_ENABLED=$([[ $ENVNAME == production ]] && echo false || echo true)"
       echo "RIO_LOG_JSON=true"

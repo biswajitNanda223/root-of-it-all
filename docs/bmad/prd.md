@@ -28,5 +28,6 @@
 
 | E6 | Playground | 6.1 docs-topic coverage, 6.2 shop E2E, 6.3 OpenAPI quality |
 | E7 | Toolchain | 7.1 lld layers + native ext, 7.2 commit checks, 7.3 Docker optimisation |
+| E8 | Multi-project platform | 8.1 catalog, 8.2 orders, 8.3 scaffolding |
 
-Status: E1–E5 in v0.1.0; E6–E7 in v0.2.0. Next candidates: refresh tokens, rate limiting, worker app, OpenTelemetry.
+Status: E1–E5 in v0.1.0; E6–E7 in v0.2.0; E8 in v0.4.0. Next candidates: refresh tokens, rate limiting, worker app, OpenTelemetry.

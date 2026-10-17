@@ -18,7 +18,7 @@ at deploy time without touching files.
 
 ## Workflow
 ```bash
-scripts/env.sh init staging                 # generates RIO_SECRET_KEY + POSTGRES_PASSWORD, encrypts, writes .env.keys
+scripts/env.sh init staging                 # generates RIO_SECRET_KEY + RIO_SERVICE_KEY + POSTGRES_PASSWORD, encrypts, writes .env.keys
 git add .env.staging && git commit -m "chore(env): add encrypted staging config"
 scripts/env.sh set staging RIO_DATABASE_URL 'postgresql+asyncpg://...'   # value is encrypted on write
 scripts/env.sh get staging RIO_LOG_LEVEL    # decrypt one value

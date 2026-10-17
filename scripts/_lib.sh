@@ -16,6 +16,17 @@ use_lld() {
   . "$ROOT/tooling/lld/load.sh" "${1:-}" "${2:-${LLD_PROFILE:-dev}}"
 }
 
+# ---------------------------------------------------------------- services (apps/*)
+# pick_service "$@": SERVICE = first arg if it names an app (default $DEFAULT_SERVICE or api); REST = remaining args.
+SERVICE="" ; REST=()
+pick_service() {
+  SERVICE="${DEFAULT_SERVICE:-api}"
+  if [[ -n "${1:-}" && -f "apps/$1/pyproject.toml" ]]; then SERVICE="$1"; shift; fi
+  REST=("$@")
+}
+svc() { python3 "$ROOT/tooling/service.py" get "$SERVICE" "$1"; }   # svc module | port | database_env | ...
+all_services() { python3 "$ROOT/tooling/service.py" list; }
+
 # ---------------------------------------------------------------- dotenvx (encrypted env files)
 # Layering (first file wins; already-exported variables always win, so CI/prod overrides work):
 #   .env.local (untracked overrides)  >  .env.$APP_ENV (committed; staging/production are *encrypted*)

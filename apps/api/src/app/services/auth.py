@@ -32,7 +32,7 @@ class AuthService:
             or not self._hasher.verify(password, user.hashed_password)
         ):
             raise UnauthorizedError("Incorrect email or password")
-        return self._tokens.issue(str(user.id))
+        return self._tokens.issue(str(user.id), {"adm": user.is_superuser})
 
     async def authenticate(self, token: str) -> User:
         user = await self._users.get(int(self._tokens.verify(token)))

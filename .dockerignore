@@ -6,6 +6,7 @@
 !apps/**
 !packages/**
 !scripts/**
+!tests/**
 !.env.example
 # ...then re-exclude noise inside the allowed trees
 **/__pycache__

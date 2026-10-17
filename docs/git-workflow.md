@@ -7,7 +7,8 @@ Install once with `scripts/bootstrap.sh` (sets `commit.template` and installs th
 | pre-commit | whitespace/EOF/line-endings, YAML/TOML/JSON, merge-conflict & case-conflict, large files (>700 KB), shebang/exec bits | hygiene |
 | pre-commit | `detect-private-key` + `scripts/hooks/scan_secrets.py` | no AWS/GitHub/Slack/Anthropic-style keys or PEM blocks (`# pragma: allowlist secret` to waive) |
 | pre-commit | `shellcheck`, `ruff` (fix) + `ruff format` | scripts and Python |
-| pre-commit | migration drift (only if models/migrations changed) | schema and Alembic never diverge |
+| pre-commit | migration drift for **every service** (only if models/migrations changed) | each service's schema and Alembic never diverge |
+| pre-commit | `service.py generate --check` (when a `pyproject.toml`/Dockerfile/compose changes) | generated compose/bake/Dockerfile regions are fresh |
 | pre-commit | `no-commit-to-branch main` | work on branches, merge via PR |
 | commit-msg | `scripts/hooks/commit_msg.py` | **Conventional Commits**: `type(scope)?!: summary` (<=100 chars, no period, blank line before body) |
 | pre-push | `scripts/hooks/pre-push.sh` | lint + `mypy --strict` + tests **only for affected projects** |

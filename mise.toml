@@ -20,8 +20,20 @@ description = "Sync workspace + install git hooks"
 run = "scripts/bootstrap.sh"
 
 [tasks.dev]
-description = "API with auto-reload on :8000"
+description = "One service with auto-reload (mise run dev catalog)"
 run = "scripts/dev.sh"
+
+[tasks."dev:all"]
+description = "All services with auto-reload (:8000 :8001 :8002)"
+run = "scripts/dev-all.sh"
+
+[tasks."service:new"]
+description = "Scaffold a new service (mise run service:new billing)"
+run = "scripts/new-service.sh"
+
+[tasks.generate]
+description = "Regenerate compose/bake/Dockerfile manifests"
+run = "scripts/generate.sh"
 
 [tasks.start]
 description = "API in production mode"
@@ -49,7 +61,7 @@ run = "scripts/check.sh"
 
 [tasks.migrate]
 description = "Apply database migrations"
-run = "scripts/migrate.sh upgrade head"
+run = "scripts/migrate.sh all upgrade head"
 
 [tasks.openapi]
 description = "Export OpenAPI contract"

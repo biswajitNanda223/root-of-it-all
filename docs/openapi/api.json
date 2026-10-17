@@ -2,9 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "root-of-it-all",
-    "summary": "Production-grade FastAPI service.",
     "description": "\nProduction-grade **FastAPI** reference service.\n\n## Quick tour\n1. `POST /api/v1/auth/register` then `POST /api/v1/auth/token` - use **Authorize** (top right) with the email as *username*.\n2. Try `items` (owner-scoped CRUD with pagination), `files` (streamed uploads), `realtime` (SSE / WebSocket).\n3. Explore the **playground** groups: one dummy API per FastAPI docs topic, plus an end-to-end *shop*\n   (products \u2192 orders \u2192 pay \u2192 events) that also documents **callbacks** and **webhooks**.\n\n## Conventions\n* Errors are `application/problem+json` (RFC 7807) and carry the `X-Request-ID` as `request_id`.\n* Lists are paginated with `limit` (1-100) and `offset`; responses are `{items,total,limit,offset}`.\n* Every response carries `X-Request-ID` and `X-Process-Time-Ms`.\n",
-    "termsOfService": "https://github.com/biswajitNanda223/root-of-it-all/blob/main/SECURITY.md",
     "contact": {
       "name": "Platform team",
       "url": "https://github.com/biswajitNanda223/root-of-it-all"
@@ -5523,6 +5521,10 @@
     {
       "name": "playground: shop (end-to-end)",
       "description": "Products -> orders -> pay/cancel -> events. Documents callbacks & webhooks."
+    },
+    {
+      "name": "health",
+      "description": "Liveness and readiness probes."
     }
   ]
 }

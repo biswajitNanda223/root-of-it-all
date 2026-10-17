@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
-
-from fastapi.routing import APIRoute
 
 DESCRIPTION = """
 Production-grade **FastAPI** reference service.
@@ -39,21 +36,4 @@ TAGS: list[dict[str, Any]] = [
 ]
 
 
-def operation_id(route: APIRoute) -> str:
-    """`items-create_item` style ids: stable, readable, and good for generated clients."""
-    tag = re.sub(r"[^a-z0-9]+", "_", str(route.tags[0] if route.tags else "default").lower()).strip(
-        "_"
-    )
-    return f"{tag}-{route.name}"
-
-
 CONTACT = {"name": "Platform team", "url": "https://github.com/biswajitNanda223/root-of-it-all"}
-TERMS = "https://github.com/biswajitNanda223/root-of-it-all/blob/main/SECURITY.md"
-SWAGGER_UI: dict[str, Any] = {
-    "persistAuthorization": True,
-    "displayRequestDuration": True,
-    "filter": True,
-    "tryItOutEnabled": True,
-    "docExpansion": "list",
-    "defaultModelsExpandDepth": 0,
-}

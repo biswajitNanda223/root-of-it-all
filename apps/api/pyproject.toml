@@ -7,19 +7,21 @@ dependencies = [
   "rio-core",
   "rio-db",
   "rio-native",
+  "rio-web",
+  "rio-auth",
   "fastapi[standard]>=0.115",
   "sqlalchemy[asyncio]>=2.0.36",
   "aiosqlite>=0.20",
   "asyncpg>=0.30",
   "alembic>=1.14",
-  "pyjwt>=2.10",
-  "pwdlib[argon2]>=0.2",
 ]
 
 [tool.uv.sources]
 rio-core = { workspace = true }
 rio-db = { workspace = true }
 rio-native = { workspace = true }
+rio-web = { workspace = true }
+rio-auth = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
@@ -27,3 +29,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]
+
+# Read by scripts/ and tooling/service.py (one place describes how to run/migrate/containerise a service).
+[tool.rio.service]
+module = "app.main:app_factory"
+port = 8000
+kind = "identity"
+database_env = "RIO_DATABASE_URL"
+database = "api"

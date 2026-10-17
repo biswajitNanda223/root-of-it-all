@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Everything CI runs: lint, types, tests, migration drift.
+# Everything CI runs: lint, types, tests (+coverage), migration drift for every service, generated files fresh.
 source "$(dirname "$0")/_lib.sh"
-
-"$(dirname "$0")/lint.sh"
-"$(dirname "$0")/typecheck.sh"
-COV=1 "$(dirname "$0")/test.sh" -q
-"$(dirname "$0")/migrate.sh" check
+d="$(dirname "$0")"
+"$d/lint.sh"
+"$d/typecheck.sh"
+COV=1 "$d/test.sh" -q
+"$d/migrate.sh" all check
+python3 tooling/service.py generate --check

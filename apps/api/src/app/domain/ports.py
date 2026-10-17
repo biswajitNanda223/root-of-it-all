@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from collections.abc import Mapping
+from typing import Any, Protocol
 
 from app.domain.entities import Item, User
 
@@ -32,7 +33,7 @@ class PasswordHasher(Protocol):
 
 
 class TokenIssuer(Protocol):
-    def issue(self, subject: str) -> str: ...
+    def issue(self, subject: str, claims: Mapping[str, Any] | None = None) -> str: ...
     def verify(self, token: str) -> str:
         """Return the subject or raise UnauthorizedError."""
         ...

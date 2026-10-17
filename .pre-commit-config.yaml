@@ -37,11 +37,13 @@ repos:
         entry: uv run ruff check --fix
         language: system
         types: [python]
+        exclude: ^tooling/templates/
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format
         language: system
         types: [python]
+        exclude: ^tooling/templates/
       - id: secrets
         name: scan for secrets
         entry: python3 scripts/hooks/scan_secrets.py
@@ -60,11 +62,17 @@ repos:
         stages: [commit-msg]
         always_run: true
       - id: migration-drift
-        name: alembic migration drift (when models change)
-        entry: scripts/migrate.sh check
+        name: alembic migration drift (every service, when models/migrations change)
+        entry: scripts/migrate.sh all check
         language: system
         pass_filenames: false
-        files: ^apps/api/(src/app/infrastructure/models\.py|migrations/)
+        files: ^apps/[^/]+/(src/.*/infrastructure/models\.py|migrations/)
+      - id: generated-files
+        name: generated compose/bake/Dockerfile regions are fresh
+        entry: python3 tooling/service.py generate --check
+        language: system
+        pass_filenames: false
+        files: ^(apps/[^/]+/pyproject\.toml|packages/[^/]+/pyproject\.toml|Dockerfile|compose.*\.yaml|docker-bake.*\.hcl)$
       - id: pre-push-checks
         name: lint, types, affected tests
         entry: scripts/hooks/pre-push.sh

@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -23,13 +23,23 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
         yield c
 
 
-def register_and_login(client: TestClient, email: str = "a@example.com") -> dict[str, str]:
-    r = client.post("/api/v1/auth/register", json={"email": email, "password": "password123"})
-    assert r.status_code == 201, r.text
-    return login(client, email, "password123")
-
-
-def login(client: TestClient, email: str, password: str) -> dict[str, str]:
+def _login(client: TestClient, email: str, password: str) -> dict[str, str]:
     r = client.post("/api/v1/auth/token", data={"username": email, "password": password})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+def _register_and_login(client: TestClient, email: str = "a@example.com") -> dict[str, str]:
+    r = client.post("/api/v1/auth/register", json={"email": email, "password": "password123"})
+    assert r.status_code == 201, r.text
+    return _login(client, email, "password123")
+
+
+@pytest.fixture
+def login() -> Callable[[TestClient, str, str], dict[str, str]]:
+    return _login
+
+
+@pytest.fixture
+def register_and_login() -> Callable[..., dict[str, str]]:
+    return _register_and_login

@@ -3,8 +3,8 @@
 import pytest
 
 from app.domain.entities import User
-from app.infrastructure.security import Argon2Hasher, JwtTokens
 from app.services.auth import AuthService
+from rio_auth import Argon2Hasher, JwtTokens
 from rio_core.errors import ConflictError, UnauthorizedError
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, MetaData
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
@@ -18,8 +18,9 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-class Base(DeclarativeBase):
-    metadata = MetaData(naming_convention=NAMING_CONVENTION)
+def new_metadata() -> MetaData:
+    """Each service builds its own `Base(DeclarativeBase)` on a fresh MetaData, so tables never leak between services."""
+    return MetaData(naming_convention=NAMING_CONVENTION)
 
 
 class TimestampMixin:

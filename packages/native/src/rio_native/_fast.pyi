@@ -1,0 +1,3 @@
+from collections.abc import Buffer
+
+def fnv1a64(data: Buffer, /) -> int: ...

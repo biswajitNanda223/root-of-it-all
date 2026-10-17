@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
 
-from tests.conftest import login, register_and_login
-
 
 def test_health(client: TestClient) -> None:
     assert client.get("/health/live").json() == {"status": "ok"}
@@ -14,7 +12,7 @@ def test_request_context_headers(client: TestClient) -> None:
     assert r.headers["x-content-type-options"] == "nosniff"
 
 
-def test_auth_flow_and_problem_json(client: TestClient) -> None:
+def test_auth_flow_and_problem_json(client: TestClient, register_and_login) -> None:
     h = register_and_login(client)
     assert client.get("/api/v1/users/me", headers=h).json()["email"] == "a@example.com"
     dup = client.post(
@@ -25,7 +23,7 @@ def test_auth_flow_and_problem_json(client: TestClient) -> None:
     assert client.get("/api/v1/users/me").status_code == 401
 
 
-def test_items_crud_and_ownership(client: TestClient) -> None:
+def test_items_crud_and_ownership(client: TestClient, register_and_login) -> None:
     alice, bob = (
         register_and_login(client, "alice@example.com"),
         register_and_login(client, "bob@example.com"),
@@ -46,14 +44,14 @@ def test_items_crud_and_ownership(client: TestClient) -> None:
     assert client.get("/api/v1/items/0", headers=alice).status_code == 422
 
 
-def test_superuser_listing(client: TestClient) -> None:
+def test_superuser_listing(client: TestClient, register_and_login, login) -> None:
     user = register_and_login(client)
     assert client.get("/api/v1/users", headers=user).status_code == 403
     admin = login(client, "admin@example.com", "adminpassword")
     assert client.get("/api/v1/users", headers=admin).json()["total"] == 2
 
 
-def test_upload_limit(client: TestClient) -> None:
+def test_upload_limit(client: TestClient, register_and_login) -> None:
     h = register_and_login(client)
     ok = client.post("/api/v1/files", files={"file": ("a.txt", b"hello")}, headers=h)
     assert ok.json()["size"] == 5

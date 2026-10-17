@@ -5,37 +5,47 @@ and a light multi-stage **Docker** build (dev → staging → prod) that links n
 
 ```
 .
-├── apps/api/            FastAPI service  (domain → services → infrastructure → api)
-├── packages/core/       rio-core: settings, errors, logging, pagination
-├── packages/db/         rio-db:   async SQLAlchemy Base / Database
-├── packages/native/     rio-native: C extension (lld-linked) with pure-Python fallback
-├── tooling/             lld profiles (base → dev/release → per-project) and affected-project detection
-├── scripts/             *.sh wrappers around `uv run` (+ git hooks in scripts/hooks)
-├── docs/                architecture, ADRs, BMAD artifacts, guides, OpenAPI contract
-├── Dockerfile           targets: dev | test | staging | prod      docker-bake.hcl: multi-arch + SBOM
-├── compose*.yaml        base + per-environment overrides
+├── apps/
+│   ├── api/             identity (JWT) + playground      :8000   own DB, own Alembic
+│   ├── catalog/         products & stock reservation     :8001   own DB, own Alembic
+│   └── orders/          order saga + outbox → catalog    :8002   own DB, own Alembic
+├── packages/
+│   ├── core/  db/       settings · errors · logging · async SQLAlchemy unit of work
+│   ├── web/             create_service_app(): middleware, problem+json, probes, DB lifespan, DI backbone
+│   ├── auth/            Argon2, JWT principal, service-key guard
+│   └── native/          C extension (lld-linked) with pure-Python fallback
+├── tests/e2e/           identity → catalog → orders across three real apps
+├── tooling/             service registry + generators, scaffolder, templates, lld profiles, affected-project detection
+├── scripts/             *.sh wrappers around `uv run` (service-aware) + git hooks
+├── docs/                architecture, services guide, ADRs, BMAD artifacts, OpenAPI contracts (docs/openapi/)
+├── Dockerfile           ONE file for every service · targets dev | test | staging | prod
+├── compose*.yaml        GENERATED from apps/*/pyproject.toml [tool.rio.service]
 ├── .env.development     plaintext dev defaults; .env.staging/.env.production are dotenvx-ENCRYPTED
-├── mise.toml            tool pins (python, uv, node, dotenvx), tasks
-└── pyproject.toml       uv workspace root + ruff / mypy / pytest config
+└── mise.toml            tool pins (python, uv, node, dotenvx), tasks
 ```
+
+**Add another project in one command:** `scripts/new-service.sh billing` — see [docs/services.md](docs/services.md).
 
 ## Quick start
 
 ```bash
 mise install            # python 3.13 + uv   (or: install uv yourself)
 scripts/bootstrap.sh    # uv sync --frozen, .env, git hooks
-scripts/dev.sh          # http://localhost:8000/docs
+scripts/dev-all.sh      # all services: :8000 identity, :8001 catalog, :8002 orders  (each has /docs)
+scripts/dev.sh catalog  # or just one
 scripts/check.sh        # lint + mypy --strict + tests(+coverage) + migration drift
 ```
 
 | Script | What it does |
 |---|---|
-| `scripts/dev.sh` / `start.sh` | reload server / production server (workers, proxy headers) |
+| `scripts/dev.sh [svc]` / `dev-all.sh` / `start.sh [svc]` | reload server(s) / production server (workers, proxy headers) |
+| `scripts/new-service.sh <name>` | scaffold a new service (workspace, Alembic, compose, bake) — [services.md](docs/services.md) |
+| `scripts/generate.sh` | regenerate compose/bake/Dockerfile manifests from `[tool.rio.service]` |
 | `scripts/lint.sh` `format.sh` `typecheck.sh` `test.sh` | ruff, ruff fix, mypy strict, pytest (`COV=1` for coverage gate) |
 | `scripts/env.sh init\|set\|get\|decrypt\|check` | encrypted env files via **dotenvx** ([docs/secrets.md](docs/secrets.md)) |
-| `scripts/migrate.sh` | Alembic: `upgrade head`, `revision -m "msg"`, `check` |
+| `scripts/migrate.sh [svc\|all]` | Alembic per service: `upgrade head`, `revision -m "msg"`, `check` |
 | `scripts/docker.sh <dev\|staging\|prod> <up\|down\|logs\|build>` | compose stacks |
-| `scripts/export-openapi.sh` | write `docs/openapi.json` contract (CI fails if stale) |
+| `scripts/export-openapi.sh [svc]` | write `docs/openapi/<svc>.json` contracts (CI fails if stale) |
 | `scripts/lld-doctor.sh` `native.sh` | prove lld links / rebuild the C extension under a profile |
 | `scripts/affected.sh` | which workspace projects the current change touches |
 | `scripts/lock.sh [--upgrade]` | refresh `uv.lock` |
@@ -52,7 +62,7 @@ streaming uploads with size cap · Server-Sent Events · WebSockets · OpenAPI t
 `TestClient` integration tests. Plus a **playground** (`/api/v1/playground`, off in production): one dummy API per docs topic and an end-to-end *shop* (products → orders → pay → events, with idempotency keys, OpenAPI callbacks and webhooks).
 
 ## Docs
-[Architecture](docs/architecture.md) · [Development](docs/development.md) · [Deployment & Docker](docs/deployment.md) ·
+[Architecture](docs/architecture.md) · [Services guide](docs/services.md) · [Development](docs/development.md) · [Deployment & Docker](docs/deployment.md) ·
 [Secrets (dotenvx)](docs/secrets.md) · [lld](docs/lld.md) · [Git workflow & hooks](docs/git-workflow.md) · [API guide](docs/api.md) ·
 [FastAPI coverage](docs/fastapi-coverage.md) · [ADRs](docs/adr/) · [BMAD artifacts](docs/bmad/README.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

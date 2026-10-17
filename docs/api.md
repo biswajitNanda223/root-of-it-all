@@ -1,7 +1,8 @@
 # API guide
 
 * Swagger UI `/docs` · ReDoc `/redoc` · schema `/openapi.json` (disabled with `RIO_DOCS_ENABLED=false`)
-* Committed contract: [`docs/openapi.json`](openapi.json) (`scripts/export-openapi.sh`; CI fails if stale)
+* Committed contracts, one per service: [`api`](openapi/api.json) · [`catalog`](openapi/catalog.json) · [`orders`](openapi/orders.json)
+  (`scripts/export-openapi.sh`; CI fails if stale). Each service also serves its own `/docs`: `:8000`, `:8001`, `:8002`.
 * Mounted sub-app docs: `/subapi/docs`
 
 ## Using Swagger
@@ -11,7 +12,23 @@
    (`demo`/`demo`), `PlaygroundScopes` (`demo`/`demo`, tick scopes).
 3. Operation ids are `<tag>-<function>` (e.g. `items-create_item`) - stable names for generated clients.
 
-## Core API (`/api/v1`)
+## Catalog service (`:8001`)
+| Endpoint | Auth | Notes |
+|---|---|---|
+| `GET /api/v1/catalog/products` | public | filter `q, category_id, min_price, max_price, in_stock`, `sort`, pagination |
+| `GET /api/v1/catalog/products/{id}`, `GET /categories` | public | |
+| `POST/PATCH/DELETE /products`, `POST /categories` | admin JWT | `adm` claim minted by identity |
+| `POST /internal/stock/reserve`, `POST /internal/stock/release/{id}` | `X-Service-Key` | idempotent, all-or-nothing |
+
+## Orders service (`:8002`)
+| Endpoint | Auth | Notes |
+|---|---|---|
+| `POST /api/v1/orders` | JWT | reserves stock in catalog; prices come from catalog; 404/409/502 mapped |
+| `GET /api/v1/orders`, `GET /{id}` | JWT | customers see their own, admins all |
+| `POST /{id}/pay`, `POST /{id}/cancel` | JWT | state machine; cancel releases stock |
+| `GET /internal/outbox`, `POST /internal/outbox/{id}/ack` | `X-Service-Key` | transactional outbox relay |
+
+## Identity & demo API (`:8000`, `/api/v1`)
 | Endpoint | Auth | Notes |
 |---|---|---|
 | `GET /health/live`, `/health/ready` | - | probes (ready -> 503 if the DB is down) |

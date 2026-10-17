@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       projects: ${{ steps.a.outputs.projects }}
+      services: ${{ steps.a.outputs.services }}
       docker: ${{ steps.a.outputs.docker }}
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +42,8 @@ jobs:
           [ "${{ github.event_name }}" = push ] && base="HEAD~1"
           projects=$(python3 tooling/affected.py --base "$base" --json)
           echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          # only apps/* become images; library changes already pull in every app that depends on them
+          echo "services=$(echo "$projects" | jq -c '[.[] | select(startswith("apps/")) | sub("apps/"; "")]')" >> "$GITHUB_OUTPUT"
           # image only needs rebuilding when runtime inputs change
           if git diff --name-only "$base"...HEAD | grep -qE '^(Dockerfile|docker-bake.hcl|uv.lock|pyproject.toml|apps/|packages/|tooling/lld/)'; then
             echo docker=true >> "$GITHUB_OUTPUT"; else echo docker=false >> "$GITHUB_OUTPUT"; fi
@@ -58,10 +61,10 @@ jobs:
       - run: shellcheck --severity=warning -x scripts/*.sh scripts/hooks/*.sh tooling/lld/load.sh
       - run: scripts/check.sh
       - name: OpenAPI contract is committed and fresh
-        run: scripts/export-openapi.sh && git diff --exit-code docs/openapi.json
+        run: scripts/export-openapi.sh && git diff --exit-code docs/openapi
 
   # ------------------------------------------------------------------ docker
-  docker:
+  gate:
     needs: [changes, check]
     if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
@@ -71,31 +74,49 @@ jobs:
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with: { dockerfile: Dockerfile, failure-threshold: warning }
-      - name: Gate inside the image (lint + types + tests, lld dev profile)
-        uses: docker/bake-action@v6
-        with: { targets: test }
-        env: { GIT_SHA: "${{ github.sha }}" }
-      - name: Build staging (same shape as prod)
+      - name: Gate inside the image (lint + types + all tests, lld dev profile)
         uses: docker/bake-action@v6
         with:
-          targets: staging
+          files: docker-bake.hcl,docker-bake.services.hcl
+          targets: test
+        env: { GIT_SHA: "${{ github.sha }}" }
+
+  images:
+    # One job per AFFECTED service: a change to catalog does not rebuild orders (unless a shared package changed).
+    needs: [changes, gate]
+    if: needs.changes.outputs.docker == 'true' && needs.changes.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: { service: "${{ fromJson(needs.changes.outputs.services) }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build staging image (same shape as prod)
+        uses: docker/bake-action@v6
+        with:
+          files: docker-bake.hcl,docker-bake.services.hcl
+          targets: staging-${{ matrix.service }}
           load: true
           set: |
             *.platform=linux/amd64
             *.attest=
         env: { GIT_SHA: "${{ github.sha }}" }
-      - name: Image size budget (< 200 MB) and non-root
+      - name: Image budget (< 200 MB) and non-root
         run: |
-          img=$(docker image ls --format '{{.Repository}}:{{.Tag}} {{.Size}}' | head -3); echo "$img"
-          bytes=$(docker image inspect ghcr.io/biswajitnanda223/root-of-it-all/api:staging --format '{{.Size}}')
-          [ "$bytes" -lt 209715200 ] || { echo "image too large: $bytes"; exit 1; }
-          [ "$(docker run --rm --entrypoint id ghcr.io/biswajitnanda223/root-of-it-all/api:staging -u)" = 10001 ]
+          img=ghcr.io/biswajitnanda223/root-of-it-all/${{ matrix.service }}:staging
+          bytes=$(docker image inspect "$img" --format '{{.Size}}')
+          echo "$img = $bytes bytes"
+          [ "$bytes" -lt 209715200 ] || { echo "image too large"; exit 1; }
+          [ "$(docker run --rm --entrypoint id "$img" -u)" = 10001 ]
       - name: Smoke test
         run: |
-          docker run -d --name api -p 8000:8000 \
-            -e RIO_SECRET_KEY=ci-secret-ci-secret-ci-secret-00 \
-            -e RIO_DATABASE_URL=sqlite+aiosqlite:////tmp/ci.db -e RIO_AUTO_CREATE_TABLES=true \
-            ghcr.io/biswajitnanda223/root-of-it-all/api:staging
-          for i in $(seq 1 30); do curl -fs localhost:8000/health/ready && break; sleep 1; done
-          curl -fs localhost:8000/openapi.json >/dev/null && curl -fs localhost:8000/api/v1/playground/params/path/1
-          docker logs api
+          port=$(python3 tooling/service.py get ${{ matrix.service }} port)
+          docker run -d --name svc -p "$port:$port" \
+            -e RIO_SECRET_KEY=ci-secret-ci-secret-ci-secret-00 -e RIO_SERVICE_KEY=ci-service-key \
+            -e "$(python3 tooling/service.py get ${{ matrix.service }} database_env)=sqlite+aiosqlite:////tmp/ci.db" \
+            -e RIO_AUTO_CREATE_TABLES=true \
+            ghcr.io/biswajitnanda223/root-of-it-all/${{ matrix.service }}:staging
+          for i in $(seq 1 30); do curl -fs "localhost:$port/health/ready" && break; sleep 1; done
+          curl -fs "localhost:$port/openapi.json" >/dev/null
+          docker logs svc

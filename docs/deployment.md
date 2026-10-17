@@ -1,6 +1,13 @@
 # Deployment & Docker
 
-## Image graph (one Dockerfile)
+## One Dockerfile, every service
+`--build-arg SERVICE=<name> SERVICE_MODULE=<module> SERVICE_PORT=<port>` pick the app (values come from
+`apps/<name>/pyproject.toml`; `compose.yaml` and `docker-bake.services.hcl` are **generated** from it - `scripts/generate.sh`).
+The `deps` layer only mounts that service's manifests, so another service's change never invalidates it. CI builds a
+matrix of **affected services only** (`tooling/affected.py`). Postgres runs once with one database per service
+(`docker/postgres/init-databases.sh`).
+
+## Image graph
 ```
 toolchain (clang, lld, uv) ─► deps ─► builder ─► runtime ─► staging | prod
         └──────────────────► dev ───► test
@@ -27,11 +34,13 @@ toolchain (clang, lld, uv) ─► deps ─► builder ─► runtime ─► stag
 
 ## Commands
 ```bash
-scripts/docker.sh dev up                       # hot reload, bind-mounted source
+scripts/docker.sh dev up                       # whole stack, hot reload, bind-mounted source
+scripts/docker.sh dev up catalog orders        # a subset (dependencies start automatically)
 RIO_SECRET_KEY=$(openssl rand -hex 32) scripts/docker.sh staging up
 scripts/docker.sh staging size                 # image sizes
-docker buildx bake test                        # gate inside the image
-VERSION=1.2.3 GIT_SHA=$(git rev-parse HEAD) docker buildx bake release --push
+docker buildx bake -f docker-bake.hcl -f docker-bake.services.hcl test                       # gate inside the image
+VERSION=1.2.3 GIT_SHA=$(git rev-parse HEAD) docker buildx bake -f docker-bake.hcl -f docker-bake.services.hcl release --push
+docker buildx bake -f docker-bake.hcl -f docker-bake.services.hcl staging-catalog           # one service
 ```
 `api` starts only after the one-shot `migrate` service succeeds.
 

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from rio_db import Base, TimestampMixin
+from rio_db import TimestampMixin, new_metadata
+
+
+class Base(DeclarativeBase):
+    """The identity service's own metadata."""
+
+    metadata = new_metadata()
 
 
 class UserModel(TimestampMixin, Base):

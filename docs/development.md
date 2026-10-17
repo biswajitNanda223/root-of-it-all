@@ -5,6 +5,11 @@
 - Optional, for native builds: `clang` and `lld` (`apt install clang lld` / `brew install llvm lld`)
 - Docker with Compose v2 for the container workflows
 
+## Services
+`scripts/dev-all.sh` runs everything; `scripts/dev.sh catalog` one service; `scripts/migrate.sh orders upgrade head` /
+`scripts/migrate.sh all check`; `scripts/new-service.sh billing` adds a project. Service name is always the first argument
+(default `api`). See [services.md](services.md).
+
 ## Daily loop
 ```bash
 scripts/bootstrap.sh     # once

@@ -3,6 +3,8 @@
 ## Goals
 Many deployables, one toolchain, one lockfile, strict boundaries, fast CI, small images.
 
+> Multiple independent services? Read [services.md](services.md) first - this page describes the shared architecture.
+
 ## Monorepo layout & dependency rule
 ```
 apps/*      deployables      may depend on  packages/*
@@ -11,7 +13,7 @@ packages/*  libraries        must NOT depend on apps/*
 `uv` workspace members share one `uv.lock`; `[tool.uv.sources]` marks internal deps as `workspace = true`.
 Add a new service by creating `apps/<name>/pyproject.toml` (it is picked up by `members = ["apps/*"]`).
 
-## Service layering (apps/api)
+## Service layering (every app: `api`, `catalog`, `orders`, ...)
 ```
 api/             HTTP only: routers, DTOs (schemas), DI wiring (deps.py)
 services/        use-cases; depend only on domain ports

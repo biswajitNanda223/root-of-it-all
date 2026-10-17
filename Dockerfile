@@ -1,5 +1,9 @@
 # syntax=docker/dockerfile:1.9
-# Monorepo build. Targets: dev | test | staging | prod      (see docker-bake.hcl and docs/deployment.md)
+# One Dockerfile for EVERY service in the monorepo (api, catalog, orders, ...).
+#   docker build --target staging --build-arg SERVICE=catalog --build-arg SERVICE_MODULE=catalog_service.main:app_factory \
+#                --build-arg SERVICE_PORT=8001 .
+# Build args come from apps/<svc>/pyproject.toml [tool.rio.service] (see docker-bake.hcl / compose.yaml, both generated).
+# Targets: dev | test | staging | prod
 #
 #   toolchain ──► deps ──► builder ──► runtime ──► staging | prod       (slim, non-root, no compilers)
 #        └──────► dev ──► test                                          (fat, tests + dev tools)
@@ -23,62 +27,72 @@ WORKDIR /workspace
 COPY tooling/lld tooling/lld
 
 # ================================================================= deps
-# Third-party wheels only. Manifests are bind-mounted (no COPY layer), so this layer is rebuilt only
-# when a pyproject.toml or the lockfile changes - never for source edits.
+# Third-party wheels of ONE service. Manifests are bind-mounted (no COPY layer), so this layer is rebuilt only when
+# uv.lock or a pyproject.toml changes - never for source edits, and never for another service's changes.
 FROM toolchain AS deps
+ARG SERVICE=api
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/cache/lld \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=apps/api/pyproject.toml,target=apps/api/pyproject.toml \
+    --mount=type=bind,source=apps/${SERVICE}/pyproject.toml,target=apps/${SERVICE}/pyproject.toml \
+# >>> generated: package manifests (tooling/service.py)
+    --mount=type=bind,source=packages/auth/pyproject.toml,target=packages/auth/pyproject.toml \
     --mount=type=bind,source=packages/core/pyproject.toml,target=packages/core/pyproject.toml \
     --mount=type=bind,source=packages/db/pyproject.toml,target=packages/db/pyproject.toml \
     --mount=type=bind,source=packages/native/pyproject.toml,target=packages/native/pyproject.toml \
+    --mount=type=bind,source=packages/web/pyproject.toml,target=packages/web/pyproject.toml \
+# <<< generated
     . tooling/lld/load.sh "" "$LLD_PROFILE" \
-    && uv sync --frozen --no-dev --no-install-workspace --package api
+    && uv sync --frozen --no-dev --no-install-workspace --package "$SERVICE"
 
 # =============================================================== builder
-# Workspace members, built per project: each one sees its own lld.env (e.g. packages/native hides symbols).
+# Shared packages + this service, built under the layered lld env: repo -> profile -> packages/native -> this service.
 FROM deps AS builder
+ARG SERVICE=api
 COPY pyproject.toml uv.lock ./
-COPY apps/api/pyproject.toml apps/api/pyproject.toml
-COPY apps/api/src apps/api/src
-COPY packages/core packages/core
-COPY packages/db packages/db
-COPY packages/native packages/native
-COPY apps/api/lld.env apps/api/lld.env
+COPY packages packages
+COPY apps/${SERVICE} apps/${SERVICE}
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/cache/lld \
-    ( . tooling/lld/load.sh packages/native "$LLD_PROFILE" \
-      && uv sync --frozen --no-dev --no-editable --inexact --package rio-native ) \
-    && ( . tooling/lld/load.sh apps/api "$LLD_PROFILE" \
-      && uv sync --frozen --no-dev --no-editable --package api ) \
+    . tooling/lld/load.sh "packages/native:apps/${SERVICE}" "$LLD_PROFILE" \
+    && uv sync --frozen --no-dev --no-editable --package "$SERVICE" \
+    # shrink: drop debug symbols from compiled extensions, delete test suites shipped by dependencies
     && find /opt/venv -name '*.so*' -type f -exec strip --strip-unneeded {} + \
     && find /opt/venv -depth -type d \( -name tests -o -name test \) -path '*/site-packages/*' -exec rm -rf {} +
 
 # ===================================================================== dev
 FROM toolchain AS dev
-ENV LLD_PROFILE=dev PATH="/opt/venv/bin:$PATH" RIO_ENVIRONMENT=development
+ARG SERVICE=api
+ARG SERVICE_MODULE=app.main:app_factory
+ARG SERVICE_PORT=8000
+ENV LLD_PROFILE=dev PATH="/opt/venv/bin:$PATH" RIO_ENVIRONMENT=development \
+    SERVICE=${SERVICE} SERVICE_MODULE=${SERVICE_MODULE} PORT=${SERVICE_PORT}
 COPY pyproject.toml uv.lock ./
 COPY apps apps
 COPY packages packages
 RUN --mount=type=cache,target=/root/.cache/uv \
-    . tooling/lld/load.sh packages/native dev && uv sync --frozen --package api
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app_factory", "--factory", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "apps/api/src", "--reload-dir", "packages"]
+    . tooling/lld/load.sh packages/native dev && uv sync --frozen
+EXPOSE ${SERVICE_PORT}
+CMD ["sh", "-c", "exec uvicorn \"$SERVICE_MODULE\" --factory --host 0.0.0.0 --port \"$PORT\" --reload --reload-dir \"apps/$SERVICE/src\" --reload-dir packages"]
 
 # ==================================================================== test
-# `docker build --target test .` == run the whole gate inside the image (lint, types, tests).
+# `docker build --target test .` == run the whole gate inside the image (lint, types, tests for ALL services).
 FROM dev AS test
+COPY tests tests
 COPY scripts scripts
-RUN uv run --frozen ruff check . && uv run --frozen mypy apps/api/src packages/core/src packages/db/src packages/native/src \
+RUN uv run --frozen ruff check . \
+    && uv run --frozen mypy apps/*/src packages/*/src \
     && uv run --frozen pytest -q
 
 # ================================================================= runtime
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+ARG SERVICE=api
+ARG SERVICE_MODULE=app.main:app_factory
+ARG SERVICE_PORT=8000
 ARG VERSION=0.0.0
 ARG GIT_SHA=unknown
-LABEL org.opencontainers.image.title="rio-api" \
+LABEL org.opencontainers.image.title="rio-${SERVICE}" \
       org.opencontainers.image.source="https://github.com/biswajitNanda223/root-of-it-all" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${GIT_SHA}"
@@ -87,18 +101,18 @@ RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app \
     && python -m pip uninstall -y pip >/dev/null 2>&1 || true
 COPY --from=builder /opt/venv /opt/venv
-COPY --chown=app:app apps/api/alembic.ini /app/alembic.ini
-COPY --chown=app:app apps/api/migrations /app/migrations
+COPY --from=builder --chown=app:app /workspace/apps/${SERVICE}/alembic.ini /app/alembic.ini
+COPY --from=builder --chown=app:app /workspace/apps/${SERVICE}/migrations /app/migrations
 WORKDIR /app
-# uvicorn reads WEB_CONCURRENCY / FORWARDED_ALLOW_IPS itself, so CMD stays exec-form (PID 1 gets SIGTERM).
+# uvicorn reads WEB_CONCURRENCY / FORWARDED_ALLOW_IPS itself; `exec` makes uvicorn PID 1 so SIGTERM reaches it.
 ENV PATH="/opt/venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=random \
-    RIO_LOG_JSON=true WEB_CONCURRENCY=2
+    RIO_LOG_JSON=true WEB_CONCURRENCY=2 SERVICE_MODULE=${SERVICE_MODULE} PORT=${SERVICE_PORT}
 USER app
-EXPOSE 8000
+EXPOSE ${SERVICE_PORT}
 STOPSIGNAL SIGTERM
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
-  CMD ["python", "-c", "import urllib.request as u,sys; sys.exit(u.urlopen('http://127.0.0.1:8000/health/live', timeout=2).status != 200)"]
-CMD ["uvicorn", "app.main:app_factory", "--factory", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--no-server-header", "--timeout-graceful-shutdown", "20"]
+  CMD python -c "import os,sys,urllib.request as u; sys.exit(u.urlopen('http://127.0.0.1:%s/health/live' % os.environ['PORT'], timeout=2).status != 200)"
+CMD ["sh", "-c", "exec uvicorn \"$SERVICE_MODULE\" --factory --host 0.0.0.0 --port \"$PORT\" --proxy-headers --no-server-header --timeout-graceful-shutdown 20"]
 
 FROM runtime AS staging
 ENV RIO_ENVIRONMENT=staging RIO_DOCS_ENABLED=true
