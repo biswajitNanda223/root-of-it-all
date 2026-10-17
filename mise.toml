@@ -4,6 +4,8 @@ min_version = "2024.12.0"
 [tools]
 python = "3.13"
 uv = "latest"
+node = "22"
+"npm:@dotenvx/dotenvx" = "2.37.0"   # encrypted .env files (docs/secrets.md)
 # lld/clang come from the OS (apt install clang lld | brew install llvm lld); see docs/development.md
 
 [env]
@@ -12,15 +14,26 @@ UV_LINK_MODE = "copy"
 UV_COMPILE_BYTECODE = "1"
 PYTHONDONTWRITEBYTECODE = "1"
 PYTHONUNBUFFERED = "1"
-_.file = { path = ".env", redact = true }
 
 [tasks.setup]
 description = "Sync workspace + install git hooks"
 run = "scripts/bootstrap.sh"
 
 [tasks.dev]
-description = "API with auto-reload on :8000"
+description = "One service with auto-reload (mise run dev catalog)"
 run = "scripts/dev.sh"
+
+[tasks."dev:all"]
+description = "All services with auto-reload (:8000 :8001 :8002)"
+run = "scripts/dev-all.sh"
+
+[tasks."service:new"]
+description = "Scaffold a new service (mise run service:new billing)"
+run = "scripts/new-service.sh"
+
+[tasks.generate]
+description = "Regenerate compose/bake/Dockerfile manifests"
+run = "scripts/generate.sh"
 
 [tasks.start]
 description = "API in production mode"
@@ -48,7 +61,7 @@ run = "scripts/check.sh"
 
 [tasks.migrate]
 description = "Apply database migrations"
-run = "scripts/migrate.sh upgrade head"
+run = "scripts/migrate.sh all upgrade head"
 
 [tasks.openapi]
 description = "Export OpenAPI contract"
@@ -61,3 +74,27 @@ run = "scripts/docker.sh dev up"
 [tasks."docker:staging"]
 description = "Compose: staging stack (slim image)"
 run = "scripts/docker.sh staging up"
+
+[tasks.lld]
+description = "Prove lld links (all profiles) and rebuild the native extension"
+run = ["scripts/lld-doctor.sh packages/native release", "scripts/native.sh release"]
+
+[tasks.affected]
+description = "Projects affected by the current change (vs origin/main)"
+run = "scripts/affected.sh"
+
+[tasks.hooks]
+description = "Run every pre-commit hook on all files"
+run = "uv run pre-commit run --all-files"
+
+[tasks."docker:test"]
+description = "Run lint + types + tests inside the image"
+run = "docker buildx bake test"
+
+[tasks."env:init"]
+description = "Create + encrypt .env.<staging|production|ci>   (mise run env:init staging)"
+run = "scripts/env.sh init"
+
+[tasks."env:check"]
+description = "Verify env files are encrypted and keys are untracked"
+run = "scripts/env.sh check"

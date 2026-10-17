@@ -13,6 +13,8 @@
 - NFR3 Reproducible: single lockfile, `--frozen` builds.
 - NFR4 Light images: slim runtime, no toolchain; non-root, read-only FS.
 - NFR5 Observability: structured logs with request ids.
+- NFR7 Native code links with lld using layered, per-project profiles; verified in CI.
+- NFR8 Commit hygiene enforced locally and in CI; CI scoped to affected projects.
 - NFR6 Every developer action available as `scripts/*.sh` and a mise task.
 
 ## Epics
@@ -24,4 +26,8 @@
 | E4 | Platform | 4.1 Docker/compose, 4.2 migrations, 4.3 observability |
 | E5 | Realtime & files | 5.1 uploads, 5.2 SSE/WS |
 
-Status: E1–E5 implemented in v0.1.0. Next candidates: refresh tokens, rate limiting, worker app, OpenTelemetry.
+| E6 | Playground | 6.1 docs-topic coverage, 6.2 shop E2E, 6.3 OpenAPI quality |
+| E7 | Toolchain | 7.1 lld layers + native ext, 7.2 commit checks, 7.3 Docker optimisation |
+| E8 | Multi-project platform | 8.1 catalog, 8.2 orders, 8.3 scaffolding |
+
+Status: E1–E5 in v0.1.0; E6–E7 in v0.2.0; E8 in v0.4.0. Next candidates: refresh tokens, rate limiting, worker app, OpenTelemetry.

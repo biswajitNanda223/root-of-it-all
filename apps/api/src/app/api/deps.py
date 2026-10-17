@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -11,12 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities import User
 from app.infrastructure.repositories import SqlItemRepository, SqlUserRepository
-from app.infrastructure.security import Argon2Hasher, JwtTokens
 from app.services.auth import AuthService
 from app.services.items import ItemService
+from rio_auth import Argon2Hasher, JwtTokens
 from rio_core.config import Settings
 from rio_core.errors import ForbiddenError
 from rio_db import Database
+from rio_web import get_db, get_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
@@ -29,21 +29,8 @@ def get_settings_dep(request: Request) -> Settings:
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 
 
-def get_db(request: Request) -> Database:
-    db: Database = request.app.state.db
-    return db
-
-
-DbDep = Annotated[Database, Depends(get_db)]
-
-
-async def get_session(db: DbDep) -> AsyncIterator[AsyncSession]:
-    """One transaction per request (unit of work)."""
-    async with db.session() as session:
-        yield session
-
-
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+DbDep = Annotated[Database, Depends(get_db)]
 
 
 def get_auth_service(session: SessionDep, settings: SettingsDep) -> AuthService:

@@ -2,4 +2,4 @@
 # Strict mypy over all workspace sources.
 source "$(dirname "$0")/_lib.sh"
 
-exec uv run mypy apps/api/src packages/core/src packages/db/src "$@"
+exec uv run mypy apps/*/src packages/*/src "$@"

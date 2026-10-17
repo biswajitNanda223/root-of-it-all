@@ -12,6 +12,13 @@ class ORMModel(BaseModel):
 
 
 class UserCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"email": "ada@example.com", "password": "correct-horse", "full_name": "Ada"}
+            ]
+        }
+    )
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str | None = Field(default=None, max_length=255)
@@ -51,13 +58,16 @@ class ItemRead(ORMModel):
 
 
 class Problem(BaseModel):
-    """RFC 7807-style error body."""
+    """RFC 7807-style error body (`application/problem+json`)."""
 
-    type: str
-    title: str
-    status: int
-    detail: str
-    request_id: str | None = None
+    type: str = Field(examples=["urn:problem:not_found"])
+    title: str = Field(examples=["NotFoundError"])
+    status: int = Field(examples=[404])
+    detail: str = Field(examples=["Item not found"])
+    request_id: str | None = Field(default=None, examples=["9f1c2b7e0f3a4c5d"])
+    errors: list[dict[str, object]] | None = Field(
+        default=None, description="Field-level details; present on 422 only."
+    )
 
 
 class FileInfo(BaseModel):
@@ -65,3 +75,4 @@ class FileInfo(BaseModel):
     content_type: str | None
     size: int
     sha256: str
+    fnv1a64: int = Field(description="64-bit FNV-1a (rio-native C extension, lld-linked)")

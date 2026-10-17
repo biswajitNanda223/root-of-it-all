@@ -1,0 +1,16 @@
+[project]
+name = "rio-native"
+version = "0.1.0"
+description = "Optional C extension (FNV-1a hash) - the monorepo's native build / lld showcase."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rio_native = ["py.typed"]

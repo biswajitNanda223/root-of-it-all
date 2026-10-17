@@ -35,3 +35,10 @@ class ForbiddenError(AppError):
 class PayloadTooLargeError(AppError):
     status_code = 413
     code = "payload_too_large"
+
+
+class UpstreamError(AppError):
+    """A dependency (another service) failed or is unreachable."""
+
+    status_code = 502
+    code = "upstream_error"

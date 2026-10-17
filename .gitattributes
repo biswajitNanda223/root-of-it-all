@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.sh text eol=lf
+uv.lock linguist-generated=true -diff
+docs/openapi.json linguist-generated=true
+*.so binary

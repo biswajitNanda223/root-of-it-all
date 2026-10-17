@@ -7,15 +7,15 @@ from alembic import context
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.infrastructure import models  # noqa: F401  (register mappers)
+from app.infrastructure.models import Base
 from rio_core.config import get_settings
-from rio_db import Base
 
 config = context.config
 if config.config_file_name:
     fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 URL = get_settings().database_url
+VERSION_TABLE = "alembic_version_api"  # per-service, so services may share one database
 
 
 def _configure(connection: Connection | None = None) -> None:
@@ -23,6 +23,7 @@ def _configure(connection: Connection | None = None) -> None:
         connection=connection,
         url=URL,
         target_metadata=target_metadata,
+        version_table=VERSION_TABLE,
         compare_type=True,
         render_as_batch=URL.startswith("sqlite"),
         literal_binds=connection is None,

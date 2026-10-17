@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Run the API with auto-reload.
+# Run one service with auto-reload: dev.sh [service] [uvicorn args]   (default: api; ports come from pyproject).
 source "$(dirname "$0")/_lib.sh"
-
-export RIO_ENVIRONMENT="${RIO_ENVIRONMENT:-development}" RIO_AUTO_CREATE_TABLES="${RIO_AUTO_CREATE_TABLES:-true}"
-exec uv run --package api uvicorn app.main:app_factory --factory \
-  --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}" --reload \
-  --reload-dir apps/api/src --reload-dir packages "$@"
+pick_service "$@"
+dx_prefix "${APP_ENV:-development}"
+exec "${DX[@]}" uv run --package "$SERVICE" uvicorn "$(svc module)" --factory \
+  --host "${HOST:-0.0.0.0}" --port "${PORT:-$(svc port)}" --reload \
+  --reload-dir "apps/$SERVICE/src" --reload-dir packages "${REST[@]}"

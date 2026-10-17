@@ -1,13 +1,35 @@
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+minimum_pre_commit_version: "4.0.0"
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+        exclude: ^docs/openapi\.json$
+      - id: mixed-line-ending
+        args: [--fix=lf]
       - id: check-yaml
       - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
       - id: check-added-large-files
+        args: [--maxkb=700]
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
       - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning, -x]
+
   - repo: local
     hooks:
       - id: ruff
@@ -15,14 +37,46 @@ repos:
         entry: uv run ruff check --fix
         language: system
         types: [python]
+        exclude: ^tooling/templates/
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format
         language: system
         types: [python]
-      - id: mypy
-        name: mypy
-        entry: scripts/typecheck.sh
+        exclude: ^tooling/templates/
+      - id: secrets
+        name: scan for secrets
+        entry: python3 scripts/hooks/scan_secrets.py
+        language: system
+        exclude: ^uv\.lock$
+      - id: dotenvx-hygiene
+        name: dotenvx - env files encrypted, keys never committed
+        entry: python3 scripts/hooks/check_dotenvx.py
+        language: system
+        files: ^\.env
+        exclude: ^\.env\.example$
+      - id: conventional-commit
+        name: conventional commit message
+        entry: python3 scripts/hooks/commit_msg.py
+        language: system
+        stages: [commit-msg]
+        always_run: true
+      - id: migration-drift
+        name: alembic migration drift (every service, when models/migrations change)
+        entry: scripts/migrate.sh all check
         language: system
         pass_filenames: false
-        types: [python]
+        files: ^apps/[^/]+/(src/.*/infrastructure/models\.py|migrations/)
+      - id: generated-files
+        name: generated compose/bake/Dockerfile regions are fresh
+        entry: python3 tooling/service.py generate --check
+        language: system
+        pass_filenames: false
+        files: ^(apps/[^/]+/pyproject\.toml|packages/[^/]+/pyproject\.toml|Dockerfile|compose.*\.yaml|docker-bake.*\.hcl)$
+      - id: pre-push-checks
+        name: lint, types, affected tests
+        entry: scripts/hooks/pre-push.sh
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true

@@ -1,0 +1,8 @@
+# <type>(<scope>): <summary>      <- imperative, <= 100 chars, no trailing period
+#
+# Why this change (wrap at 72). Reference stories: "Story: 3.1".
+#
+# BREAKING CHANGE: <what breaks>   (or use '!' after the type)
+#
+# types: feat fix perf refactor docs test build ci chore style revert
+# scopes: api core db native docker deps docs ci
